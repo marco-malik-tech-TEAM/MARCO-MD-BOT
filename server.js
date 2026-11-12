@@ -1,5 +1,5 @@
 import app from "./app.js";
-import { PORT } from "./env.js";
+import { HOST, PORT } from "./env.js";
 import { whatsappService } from "./services/whatsappService.js";
 import { createServer } from "http";
 import { initSocket } from "./services/socketService.js";
@@ -11,8 +11,12 @@ initSocket(httpServer);
 // Run cleanup on startup
 cleanStaleSessions();
 
-httpServer.listen(PORT, () => {
-    console.log(`🚀 MARCO MALIK & WAQAR WRITES MD running on port ${PORT}`);
+httpServer.on("error", (error) => {
+    console.error("❌ HTTP server failed to start:", error);
+    process.exitCode = 1;
+});
+httpServer.listen(PORT, HOST, () => {
+    console.log(`🚀 MARCO MALIK & WAQAR WRITES MD running on http://${HOST}:${PORT}`);
 });
 
 // Initialize WhatsApp

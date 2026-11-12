@@ -17,6 +17,9 @@ app.use(express.json());
 app.get("/", (req, res) => {
     res.json({ status: "OK", service: "MARCO MALIK & WAQAR WRITES MD" });
 });
+app.get("/healthz", (req, res) => {
+    res.status(200).json({ status: "healthy" });
+});
 
 // Bot status
 app.get("/api/status", (req, res) => {
