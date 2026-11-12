@@ -77,8 +77,17 @@ export async function createWhatsAppClient() {
                     }
                     */
 
-                    const creds = sessionObj.creds ? JSON.stringify(sessionObj.creds) : decoded;
-                    writeFileSync(join(AUTH_INFO_PATH, "creds.json"), creds);
+                    if (sessionObj.files && typeof sessionObj.files === "object") {
+                        // Restore the complete Baileys auth state, not only creds.json.
+                        for (const [fileName, encoded] of Object.entries(sessionObj.files)) {
+                            if (!/^[A-Za-z0-9._-]+$/.test(fileName)) continue;
+                            writeFileSync(join(AUTH_INFO_PATH, fileName), Buffer.from(encoded, "base64"));
+                        }
+                    } else {
+                        // Backward compatibility with older Session IDs.
+                        const creds = sessionObj.creds ? JSON.stringify(sessionObj.creds) : decoded;
+                        writeFileSync(join(AUTH_INFO_PATH, "creds.json"), creds);
+                    }
                 } catch (e) {
                     // Legacy support: if not JSON, it's the raw creds
                     writeFileSync(join(AUTH_INFO_PATH, "creds.json"), decoded);

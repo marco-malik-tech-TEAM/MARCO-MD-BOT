@@ -1,11 +1,12 @@
 import { default as makeWASocket, DisconnectReason, useMultiFileAuthState, Browsers, delay } from "@whiskeysockets/baileys";
 import pino from "pino";
 import { join } from "path";
-import { rmSync, mkdirSync, existsSync, readFileSync } from "fs";
+import { rmSync, mkdirSync, existsSync, readFileSync, readdirSync, cpSync } from "fs";
 import { randomBytes } from "crypto";
 import { emitUpdate, getIO } from "./socketService.js";
 import { sendWelcome } from "./welcome.js";
 import { getWaVersion } from "../utils/waVersion.js";
+import { AUTH_INFO_PATH } from "./configService.js";
 
 // Temp storage for active pairing sessions
 const activePairingSessions = new Map();
@@ -131,12 +132,18 @@ export const startPairing = async (phoneNumber, method = "qr", socketId, hooks =
 
                     let sessionData = "";
                     try {
-                        const credsPath = join(sessionDir, "creds.json");
-                        const creds = JSON.parse(readFileSync(credsPath).toString());
-                        const expiresAt = Date.now() + (24 * 60 * 60 * 1000);
-                        sessionData = "MARCOWAQAR-" + Buffer.from(JSON.stringify({ creds, expiresAt })).toString("base64");
+                        // A Baileys session needs creds.json plus all signal/key files.
+                        // Bundle every file so the session can be restored after a Railway restart.
+                        const files = {};
+                        for (const entry of readdirSync(sessionDir, { withFileTypes: true })) {
+                            if (entry.isFile()) {
+                                const filePath = join(sessionDir, entry.name);
+                                files[entry.name] = readFileSync(filePath).toString("base64");
+                            }
+                        }
+                        sessionData = "MARCOWAQAR-" + Buffer.from(JSON.stringify({ version: 2, files })).toString("base64");
                     } catch (e) {
-                        console.error(`[${sessionId}] Failed to read creds:`, e);
+                        console.error(`[${sessionId}] Failed to bundle session:`, e);
                     }
 
                     try {
@@ -150,13 +157,26 @@ export const startPairing = async (phoneNumber, method = "qr", socketId, hooks =
                         console.error(`[${sessionId}] Failed to send DM:`, msgErr);
                     }
 
+                    // Hand the newly paired credentials to the main bot immediately.
+                    // This prevents the bot from going offline after the welcome message.
+                    try {
+                        rmSync(AUTH_INFO_PATH, { recursive: true, force: true });
+                        mkdirSync(AUTH_INFO_PATH, { recursive: true });
+                        cpSync(sessionDir, AUTH_INFO_PATH, { recursive: true });
+                        const { whatsappService } = await import("./whatsappService.js");
+                        await whatsappService.restart();
+                        console.log(`[${sessionId}] Main bot restarted with the new paired session.`);
+                    } catch (handoffError) {
+                        console.error(`[${sessionId}] Failed to hand off session to main bot:`, handoffError);
+                    }
+
                     notify("pairing_success", {
                         sessionId,
-                        message: "Pairing Successful! Check your WhatsApp DM for the Session ID."
+                        message: "Pairing Successful! Bot is connecting with the new session."
                     });
 
-                    await delay(5000);
-                    sock.end();
+                    await delay(3000);
+                    try { sock.end(); } catch { }
                     activePairingSessions.delete(sessionId);
                     if (existsSync(sessionDir)) {
                         rmSync(sessionDir, { recursive: true, force: true });
