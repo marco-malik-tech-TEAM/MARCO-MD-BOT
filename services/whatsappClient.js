@@ -547,7 +547,11 @@ ${text}
             // ---- Prefix handling: configured prefix, ".", "!" , "/" or NO prefix (for help-type words) ----
             const trimmed = messageText.trim();
             if (!trimmed) continue;
-            const NO_PREFIX_OK = new Set(["help", "menu", "allmenu", "commands", "cmds", "owner", "creator", "ping", "alive", "pair"]);
+            // Allow known commands without a prefix as well as with ., !, /, or the configured prefix.
+            // Unknown ordinary messages are still ignored.
+            const NO_PREFIX_OK = new Set([
+                ...Object.keys(commands), "help", "menu", "allmenu", "commands", "cmds", "alive", "connect"
+            ]);
             let body = null;
             for (const pf of [...new Set([prefix, ".", "!", "/"])]) {
                 if (pf && trimmed.startsWith(pf)) { body = trimmed.slice(pf.length).trim(); break; }

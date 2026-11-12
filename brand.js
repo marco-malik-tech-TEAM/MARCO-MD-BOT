@@ -7,11 +7,12 @@ export const BRAND = {
     short: "MARCO MALIK & WAQAR WRITES",
     version: "V1.0",
     website: "https://marco-waqar-mini-bot-info-web.vercel.app",
+    channel: "https://whatsapp.com/channel/0029VbE1PSOGzzKS8DCvLM32",
     owners: [
         { name: "Marco Malik", role: "Developer", age: 19, country: "Pakistan", city: "Rajanpur (District Rajanpur)", number: "923377857866" },
         { name: "Waqar Writes", role: "Developer", age: 21, country: "Pakistan", city: "Karachi", number: "923293245445" }
     ],
-    footer: "💠 *Powered by MARCO MALIK & WAQAR WRITES MD*\n🌐 https://marco-waqar-mini-bot-info-web.vercel.app"
+    footer: "💠 *Powered by MARCO MALIK & WAQAR WRITES MD*\n🌐 https://marco-waqar-mini-bot-info-web.vercel.app\n📢 Channel: https://whatsapp.com/channel/0029VbE1PSOGzzKS8DCvLM32"
 };
 
 export const OWNER_NUMBERS = BRAND.owners.map(o => o.number);

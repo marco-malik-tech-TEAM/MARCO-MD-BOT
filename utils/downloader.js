@@ -34,7 +34,7 @@ export function ytdlp(url, kind = "video") {
         const out = `${base}.%(ext)s`;
         const common = [
             "--no-playlist", "--no-warnings", "--geo-bypass", "--force-ipv4",
-            "--socket-timeout", "30", "--retries", "3",
+            "--socket-timeout", "30", "--retries", "3", "--no-check-certificates",
             "--extractor-args", "youtube:player_client=tv,ios,web_safari,android",
             "--user-agent", UA,
             "-o", out
@@ -127,8 +127,8 @@ export async function downloadMedia(url, { site = "generic", kind = "video" } = 
         site === "facebook" ? facebookProviders(url) : []
     );
 
-    // TikTok/IG/FB: APIs first (fast, no cookies), YouTube: yt-dlp first
-    const order = site === "youtube" ? ["ytdlp", "api"] : ["api", "ytdlp"];
+    // TikTok is more reliable through the bundled extractor than public mirrors.
+    const order = (site === "youtube" || site === "tiktok") ? ["ytdlp", "api"] : ["api", "ytdlp"];
     for (const step of order) {
         if (step === "ytdlp") {
             try { return { buffer: await ytdlp(url, kind), via: "yt-dlp" }; }
@@ -156,4 +156,7 @@ export const detectSite = (u = "") => {
     if (/(facebook\.com|fb\.watch|fb\.com)/i.test(u)) return "facebook";
     return "generic";
 };
-export const firstUrl = (s = "") => (s.match(/https?:\/\/[^\s]+/i) || [])[0];
+export const firstUrl = (s = "") => {
+    const match = s.match(/https?:\/\/[^\s]+/i);
+    return match?.[0]?.replace(/[),.!?]+$/g, "");
+};
