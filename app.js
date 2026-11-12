@@ -13,9 +13,9 @@ app.use(express.static("public"));
 app.use(cors());
 app.use(express.json());
 
-// Health check
+// Open the pairing website when the Railway root URL is visited.
 app.get("/", (req, res) => {
-    res.json({ status: "OK", service: "MARCO MALIK & WAQAR WRITES MD" });
+    res.redirect(302, "/pair");
 });
 app.get("/healthz", (req, res) => {
     res.status(200).json({ status: "healthy" });
